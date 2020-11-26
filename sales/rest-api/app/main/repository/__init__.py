@@ -43,6 +43,10 @@ class SaleRepository(ABC):
     def find_by_id(self, id: str) -> SaleModel:
         pass
 
+    @abstractmethod
+    def create(self, sale: SaleModel) -> None:
+        pass
+
 
 class RepositoryErr(Exception):
     """Generic repository error."""
@@ -50,3 +54,17 @@ class RepositoryErr(Exception):
 
 class RecordNotFoundErr(RepositoryErr):
     """Record not found."""
+
+
+class RecordFieldNullErr(Exception):
+    """Record field cannot be null."""
+
+    def __init__(self, field):
+        self.field = field
+
+
+class RecordFieldDuplicateErr(Exception):
+    """Record field cannot be duplicated."""
+
+    def __init__(self, field):
+        self.field = field

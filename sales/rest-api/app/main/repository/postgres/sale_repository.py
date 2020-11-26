@@ -1,12 +1,22 @@
 """Postgres Sale Repository."""
+import psycopg2
+
 from app.main import repository as repo
 from app.main.repository.postgres import sale_sql as sql
 from app.main.repository import utils
 
 
-def provide_sale_repository(conn):
+def provide_sale_repository(
+    conn,
+    null_err=psycopg2.errors.NotNullViolation,
+    duplicate_err=psycopg2.errors.UniqueViolation,
+):
     """Initialize and return repository."""
-    return SaleRepository(conn=conn)
+    return SaleRepository(
+        conn=conn,
+        null_err=null_err,
+        duplicate_err=duplicate_err,
+    )
 
 
 class SaleRepository(repo.SaleRepository):
@@ -25,9 +35,11 @@ class SaleRepository(repo.SaleRepository):
         "updated_at",
     )
 
-    def __init__(self, conn):
+    def __init__(self, conn, null_err, duplicate_err):
         """Inject connection."""
         self._conn = conn
+        self._null_err = null_err
+        self._duplicate_err = duplicate_err
 
     def close(self) -> None:
         """Close connection."""
@@ -46,6 +58,40 @@ class SaleRepository(repo.SaleRepository):
             if row is None:
                 raise repo.RecordNotFoundErr()
             return repo.SaleModel(**utils.row_to_dict(self._cols, row))
+        finally:
+            self._conn.commit()
+            if cur is not None:
+                cur.close()
+
+    def create(self, sale: repo.SaleModel) -> None:
+        """Create a sale."""
+        cur = None
+        try:
+            cur = self._conn.cursor()
+            cur.execute(
+                sql.INSERT_SALE_STATEMENT,
+                (
+                    sale.id,
+                    sale.date_time,
+                    sale.order_id,
+                    sale.sku,
+                    sale.quantity,
+                    sale.subtotal,
+                    sale.fee,
+                    sale.tax,
+                    sale.created_at,
+                    sale.updated_at,
+                ),
+            )
+        except self._null_err as error:
+            column = error.diag.column_name
+            raise repo.RecordFieldNullErr(field=column)
+        except self._duplicate_err as error:
+            constraint = error.diag.constraint_name
+            field = utils.field_from_constraint(constraint)
+            raise repo.RecordFieldDuplicateErr(field=field)
+        except Exception:
+            raise repo.RepositoryErr()
         finally:
             self._conn.commit()
             if cur is not None:
