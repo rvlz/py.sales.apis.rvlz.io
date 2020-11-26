@@ -1,0 +1,33 @@
+version: "3.7"
+
+services:
+  sales-rest-api:
+    build:
+      context: ./sales/rest-api
+      dockerfile: Dockerfile
+    volumes:
+    - "./sales/rest-api:/code"
+    ports:
+    - 8080:5000
+
+  sales-graphql-api:
+    build:
+      context: ./sales/graphql-api
+      dockerfile: Dockerfile
+    volumes:
+    - "./sales/graphql-api:/code"
+    ports:
+    - 8081:5000
+
+  sales-db:
+    build:
+      context: ./sales/postgres
+      dockerfile: Dockerfile
+    environment:
+      POSTGRES_USER: docker
+      POSTGRES_PASSWORD: docker
+    volumes:
+    - sales-data:/var/lib/postgresql/data
+
+volumes:
+  sales-data:
