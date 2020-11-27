@@ -273,3 +273,157 @@ def test_delete_by_id_execute_error(mocker, sale):
         repo.delete_by_id(sale["id"])
     mock_conn.commit.assert_called_once()
     mock_cursor.close.assert_called_once()
+
+
+@pytest.mark.parametrize(
+    "query,fields",
+    [
+        ('UPDATE "sale" SET order_id = (%s) WHERE id = (%s)', ["order_id"]),
+        (
+            'UPDATE "sale" SET '
+            "order_id = (%s), "
+            "date_time = (%s), "
+            "sku = (%s) "
+            "WHERE id = (%s)",
+            ["order_id", "date_time", "sku"],
+        ),
+        (
+            'UPDATE "sale" SET '
+            "order_id = (%s), "
+            "date_time = (%s), "
+            "sku = (%s), "
+            "quantity = (%s) "
+            "WHERE id = (%s)",
+            ["order_id", "date_time", "sku", "quantity"],
+        ),
+    ],
+)
+def test_update(mocker, sale, query, fields):
+    """Update sale."""
+    s = SaleModel(**sale)
+    mock_conn = mocker.Mock()
+    mock_cursor = mock_conn.cursor.return_value
+    repo = provide_sale_repository(conn=mock_conn)
+    repo.update(s, fields)
+    mock_cursor.execute.assert_called_with(
+        query,
+        tuple(sale[f] for f in (fields + ["id"])),
+    )
+    mock_conn.commit.assert_called_once()
+    mock_cursor.close.assert_called_once()
+
+
+@pytest.mark.parametrize(
+    "fields", [["foo", "bar"], ["foobar"], ["foobar", "sku"]]
+)
+def test_update_invalid_fields(mocker, sale, fields):
+    """Raises 'ValueError' exception when invalid fields provided."""
+    s = SaleModel(**sale)
+    mock_conn = mocker.Mock()
+    repo = provide_sale_repository(conn=mock_conn)
+    with pytest.raises(ValueError) as excinfo:
+        repo.update(s, fields)
+    excinfo.value.args == (f'"{fields[0]}" not valid field.',)
+
+
+def test_update_empty_fields(mocker, sale):
+    """Raises 'ValueError' exception when empty list of fields provided."""
+    s = SaleModel(**sale)
+    mock_conn = mocker.Mock()
+    repo = provide_sale_repository(conn=mock_conn)
+    with pytest.raises(ValueError) as excinfo:
+        repo.update(s, [])
+    assert excinfo.value.args == ('"fields" argument cannot be empty list.',)
+
+
+@pytest.mark.parametrize(
+    "fields",
+    (
+        ["id"],
+        ["sku", "id"],
+        ["order_id", "sku", "id"],
+    ),
+)
+def test_update_id_field(mocker, sale, fields):
+    """Raises 'ValueError' exception when id provided in fields list."""
+    s = SaleModel(**sale)
+    mock_conn = mocker.Mock()
+    repo = provide_sale_repository(conn=mock_conn)
+    with pytest.raises(ValueError) as excinfo:
+        repo.update(s, fields)
+    assert excinfo.value.args == ('"id" cannot be changed.',)
+
+
+def test_update_null_id(mocker, sale):
+    """Raises 'ValueError' exception when sale.id is None."""
+    s = SaleModel(**sale)
+    s.id = None
+    mock_conn = mocker.Mock()
+    repo = provide_sale_repository(conn=mock_conn)
+    with pytest.raises(ValueError) as excinfo:
+        repo.update(s, ["sku"])
+    assert excinfo.value.args == ('Instance attribute "id" cannot be None.',)
+
+
+@pytest.mark.parametrize(
+    "field",
+    [
+        "date_time",
+        "order_id",
+        "sku",
+        "quantity",
+        "subtotal",
+        "fee",
+        "tax",
+        "created_at",
+        "updated_at",
+    ],
+)
+def test_update_null_field_value(mocker, sale, field):
+    """Raise 'RecordFieldNullErr' exception when null constraint violated."""
+
+    class StubNullViolation(Exception):
+        """Stub for psycopg2 NotNullViolation exception."""
+
+        class StubDiag:
+            def __init__(self, column_name):
+                self.column_name = column_name
+
+        def __init__(self, column):
+            self.diag = self.StubDiag(column_name=column)
+
+    s = SaleModel(**sale)
+    setattr(s, field, None)
+    mock_conn = mocker.Mock()
+    mock_cursor = mock_conn.cursor.return_value
+    mock_cursor.execute.side_effect = [StubNullViolation(column=field)]
+    repo = provide_sale_repository(conn=mock_conn, null_err=StubNullViolation)
+    with pytest.raises(RecordFieldNullErr) as excinfo:
+        repo.update(s, [field])
+    assert excinfo.value.field == field
+    mock_conn.commit.assert_called_once()
+    mock_cursor.close.assert_called_once()
+
+
+def test_update_cursor_error(mocker, sale):
+    """Raise 'RepositoryErr' when cursor exception raised."""
+    s = SaleModel(**sale)
+    mock_conn = mocker.Mock()
+    mock_conn.cursor.side_effect = [Exception()]
+    repo = provide_sale_repository(conn=mock_conn)
+    with pytest.raises(RepositoryErr):
+        repo.update(s, ["sku"])
+    mock_conn.commit.assert_called_once()
+
+
+def test_update_execute_error(mocker, sale):
+    """Raise 'RepositoryErr' when query execution raises exception."""
+    s = SaleModel(**sale)
+    mock_conn = mocker.Mock()
+    mock_cursor = mock_conn.cursor.return_value
+    mock_cursor.execute.side_effect = [Exception()]
+    repo = provide_sale_repository(conn=mock_conn)
+    with pytest.raises(RepositoryErr):
+        repo.update(s, ["sku"])
+    mock_conn.commit.assert_called_once()
+    mock_cursor.close.assert_called_once()

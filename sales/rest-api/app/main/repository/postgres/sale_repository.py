@@ -1,4 +1,6 @@
 """Postgres Sale Repository."""
+from typing import List
+
 import psycopg2
 
 from app.main import repository as repo
@@ -108,6 +110,27 @@ class SaleRepository(repo.SaleRepository):
         else:
             if cur.rowcount != 1:
                 raise repo.RecordNotFoundErr()
+        finally:
+            self._conn.commit()
+            if cur is not None:
+                cur.close()
+
+    def update(self, sale: repo.SaleModel, fields: List[str]) -> None:
+        """Update a sale."""
+        cur = None
+        values = utils.extract_update_values(sale, fields)
+        try:
+            cur = self._conn.cursor()
+            stmt = sql.generate_update_sale_statement(fields)
+            cur.execute(
+                stmt,
+                values,
+            )
+        except self._null_err as error:
+            column = error.diag.column_name
+            raise repo.RecordFieldNullErr(field=column)
+        except Exception:
+            raise repo.RepositoryErr()
         finally:
             self._conn.commit()
             if cur is not None:
