@@ -96,3 +96,19 @@ class SaleRepository(repo.SaleRepository):
             self._conn.commit()
             if cur is not None:
                 cur.close()
+
+    def delete_by_id(self, id: str) -> None:
+        """Delete a sale by id."""
+        cur = None
+        try:
+            cur = self._conn.cursor()
+            cur.execute(sql.DELETE_SALE_BY_ID_STATEMENT, (id,))
+        except Exception:
+            raise repo.RepositoryErr()
+        else:
+            if cur.rowcount != 1:
+                raise repo.RecordNotFoundErr()
+        finally:
+            self._conn.commit()
+            if cur is not None:
+                cur.close()

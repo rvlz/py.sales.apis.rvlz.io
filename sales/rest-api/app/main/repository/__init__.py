@@ -47,6 +47,10 @@ class SaleRepository(ABC):
     def create(self, sale: SaleModel) -> None:
         pass
 
+    @abstractmethod
+    def delete_by_id(self, id: str) -> None:
+        pass
+
 
 class RepositoryErr(Exception):
     """Generic repository error."""

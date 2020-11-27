@@ -224,3 +224,52 @@ def test_create_execute_error(mocker, sale):
         repo.create(s)
     mock_conn.commit.assert_called_once()
     mock_cursor.close.assert_called_once()
+
+
+def test_delete_by_id(mocker, sale):
+    """Delete sale by id."""
+    mock_conn = mocker.Mock()
+    mock_cursor = mock_conn.cursor.return_value
+    mock_cursor.rowcount = 1
+    repo = provide_sale_repository(conn=mock_conn)
+    repo.delete_by_id(sale["id"])
+    mock_cursor.execute.assert_called_with(
+        'DELETE FROM "sale" WHERE id = %s',
+        (sale["id"],),
+    )
+    mock_conn.commit.assert_called_once()
+    mock_cursor.close.assert_called_once()
+
+
+def test_delete_by_id_no_found(mocker, sale):
+    """Raise 'RecordNotFoundErr' when sale not found."""
+    mock_conn = mocker.Mock()
+    mock_cursor = mock_conn.cursor.return_value
+    mock_cursor.rowcount = 0
+    repo = provide_sale_repository(conn=mock_conn)
+    with pytest.raises(RecordNotFoundErr):
+        repo.delete_by_id(sale["id"])
+    mock_conn.commit.assert_called_once()
+    mock_cursor.close.assert_called_once()
+
+
+def test_delete_by_id_cursor_error(mocker, sale):
+    """Raise 'RepositoryErr' when cursor exception raised."""
+    mock_conn = mocker.Mock()
+    mock_conn.cursor.side_effect = [Exception()]
+    repo = provide_sale_repository(conn=mock_conn)
+    with pytest.raises(RepositoryErr):
+        repo.delete_by_id(sale["id"])
+    mock_conn.commit.assert_called_once()
+
+
+def test_delete_by_id_execute_error(mocker, sale):
+    """Raise 'RepositoryErr' when query execution raises exception."""
+    mock_conn = mocker.Mock()
+    mock_cursor = mock_conn.cursor.return_value
+    mock_cursor.execute.side_effect = [Exception()]
+    repo = provide_sale_repository(conn=mock_conn)
+    with pytest.raises(RepositoryErr):
+        repo.delete_by_id(sale["id"])
+    mock_conn.commit.assert_called_once()
+    mock_cursor.close.assert_called_once()
