@@ -1,4 +1,5 @@
 """Fixtures."""
+import datetime as dt
 from datetime import datetime
 
 import pytest
@@ -18,3 +19,22 @@ def sale():
         "created_at": datetime.utcnow(),
         "updated_at": datetime.utcnow(),
     }
+
+
+@pytest.fixture
+def sale_rows(count):
+    return [
+        (
+            str(i),
+            datetime.utcnow() + dt.timedelta(minutes=i),
+            f"FFX{i}",
+            f"ff-11-22-{i}",
+            10 + i,
+            1000 + i,
+            10 + i,
+            100 + i,
+            datetime.utcnow() + dt.timedelta(minutes=i),
+            datetime.utcnow() + dt.timedelta(minutes=i),
+        )
+        for i in range(count)
+    ]

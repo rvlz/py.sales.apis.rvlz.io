@@ -427,3 +427,93 @@ def test_update_execute_error(mocker, sale):
         repo.update(s, ["sku"])
     mock_conn.commit.assert_called_once()
     mock_cursor.close.assert_called_once()
+
+
+@pytest.mark.parametrize("count", [10])
+def test_find_after(mocker, sale_rows, count):
+    """
+    Find sales that come after a certain sale when ordered by
+    descending "created_at" time.
+    """
+    mock_conn = mocker.Mock()
+    mock_cursor = mock_conn.cursor.return_value
+    mock_cursor.fetchall.return_value = sale_rows
+    repo = provide_sale_repository(conn=mock_conn)
+    sales = repo.find(id="1", limit=count, after=True)
+    mock_cursor.execute.assert_called_with(
+        "SELECT id, date_time, order_id, sku, quantity, subtotal, "
+        'fee, tax, created_at, updated_at FROM "sale" '
+        'WHERE created_at <= (SELECT created_at FROM "sale" '
+        "WHERE id = %(id)s) AND id <> %(id)s ORDER BY created_at "
+        "DESC LIMIT %(limit)s",
+        {"id": "1", "limit": count},
+    )
+    mock_cursor.close.assert_called_once()
+    assert isinstance(sales, list)
+    assert len(sales) == count
+    for s in sales:
+        assert isinstance(s, SaleModel)
+
+
+@pytest.mark.parametrize("count", [10])
+def test_find_before(mocker, sale_rows, count):
+    """
+    Find sale that come before a certain sale when ordered by
+    descending "created_at" time.
+    """
+    mock_conn = mocker.Mock()
+    mock_cursor = mock_conn.cursor.return_value
+    mock_cursor.fetchall.return_value = sale_rows
+    repo = provide_sale_repository(conn=mock_conn)
+    sales = repo.find(id="1", limit=count, after=False)
+    mock_cursor.execute.assert_called_with(
+        "SELECT * FROM (SELECT id, date_time, order_id, sku, quantity, "
+        'subtotal, fee, tax, created_at, updated_at FROM "sale" WHERE '
+        'created_at >= (SELECT created_at FROM "sale" WHERE id = %(id)s) '
+        "AND id <> %(id)s ORDER BY created_at ASC LIMIT %(limit)s) AS "
+        '"filtered_sales" ORDER BY created_at DESC',
+        {"id": "1", "limit": count},
+    )
+    mock_cursor.close.assert_called_once()
+    assert isinstance(sales, list)
+    assert len(sales) == count
+    for s in sales:
+        assert isinstance(s, SaleModel)
+
+
+@pytest.mark.parametrize("limit", [-30, 0, 101])
+def test_find_invalid_limit(mocker, limit):
+    """
+    Raises ValueError exception when limit is less than 1
+    or greater than 100.
+    """
+    mock_conn = mocker.Mock()
+    mock_conn.cursor.return_value.fetchall.return_value = []
+    repo = provide_sale_repository(conn=mock_conn)
+    with pytest.raises(ValueError) as excinfo:
+        repo.find("1", limit=limit)
+    assert excinfo.value.args == (
+        '"limit" argument must be between 1 and 100 inclusive.',
+    )
+
+
+def test_find_cursor_error(mocker):
+    """Raise custom exception when cursor exception raised."""
+    mock_conn = mocker.Mock()
+    mock_conn.cursor.side_effect = [Exception()]
+    repo = provide_sale_repository(conn=mock_conn)
+    with pytest.raises(RepositoryErr):
+        repo.find("1")
+    mock_conn.commit.assert_called_once()
+
+
+def test_find_execute_error(mocker):
+    """Raise custom exception when query execution exception raised."""
+    mock_conn = mocker.Mock()
+    mock_cursor = mock_conn.cursor.return_value
+    mock_cursor.execute.side_effect = [Exception()]
+    repo = provide_sale_repository(conn=mock_conn)
+    with pytest.raises(RepositoryErr):
+        repo.find("1")
+    mock_conn.commit.assert_called_once()
+    mock_cursor.close.assert_called_once()

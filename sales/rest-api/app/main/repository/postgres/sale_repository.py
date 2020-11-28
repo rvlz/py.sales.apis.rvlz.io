@@ -135,3 +135,36 @@ class SaleRepository(repo.SaleRepository):
             self._conn.commit()
             if cur is not None:
                 cur.close()
+
+    def find(
+        self, id: str, limit: int = 10, after: bool = True
+    ) -> List[repo.SaleModel]:
+        """
+        Get sales before or after sale with id, where sales
+        listed in descending order by column created_at
+        """
+        if limit > 100 or limit < 1:
+            raise ValueError(
+                '"limit" argument must be between 1 and 100 inclusive.'
+            )
+        cur = None
+        stmt = (
+            sql.SELECT_SALES_AFTER_STATEMENT
+            if after
+            else sql.SELECT_SALES_BEFORE_STATEMENT
+        )
+        try:
+            cur = self._conn.cursor()
+            cur.execute(stmt, {"id": id, "limit": limit})
+            rows = cur.fetchall()
+        except Exception:
+            raise repo.RepositoryErr()
+        else:
+            return [
+                repo.SaleModel(**utils.row_to_dict(self._cols, row))
+                for row in rows
+            ]
+        finally:
+            self._conn.commit()
+            if cur is not None:
+                cur.close()

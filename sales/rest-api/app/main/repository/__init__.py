@@ -55,6 +55,15 @@ class SaleRepository(ABC):
     def update(self, sale: SaleModel, fields: List[str]) -> None:
         pass
 
+    @abstractmethod
+    def find(
+        self,
+        id: str,
+        limit: int = 10,
+        after: bool = True,
+    ) -> List[SaleModel]:
+        pass
+
 
 class RepositoryErr(Exception):
     """Generic repository error."""
