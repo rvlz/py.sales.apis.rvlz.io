@@ -1,6 +1,6 @@
 """Service."""
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 from abc import ABC, abstractmethod
 
 
@@ -47,6 +47,10 @@ class SaleService(ABC):
     def delete_by_id(self, id: str) -> None:
         pass
 
+    @abstractmethod
+    def update(self, sale: SaleModel, fields: List[str]) -> None:
+        pass
+
 
 class ServiceErr(Exception):
     """Generic service error."""
@@ -61,3 +65,7 @@ class ResourceFieldNullErr(ServiceErr):
 
     def __init__(self, field):
         self.field = field
+
+
+class InvalidArgsErr(ServiceErr):
+    """Invalid argments."""

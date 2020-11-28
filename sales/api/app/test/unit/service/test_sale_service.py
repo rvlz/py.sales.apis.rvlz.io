@@ -132,3 +132,87 @@ def test_delete_by_id_generic_error(mocker, sale, exception):
     service = provide_sale_service(repository=mock_repo)
     with pytest.raises(srv.ServiceErr):
         service.delete_by_id(sale["id"])
+
+
+@pytest.mark.parametrize(
+    "fields",
+    [
+        ["sku", "order_id"],
+        ["quantity", "fee", "tax"],
+    ],
+)
+def test_update(mocker, sale, fields):
+    """Update sale."""
+    service_sale = srv.SaleModel(**sale)
+    mock_repo = mocker.Mock()
+    service = provide_sale_service(repository=mock_repo)
+    service.update(service_sale, fields)
+    mock_repo.update.assert_called_once()
+
+
+@pytest.mark.parametrize("fields", [["sku"]])
+def test_update_not_found(mocker, sale, fields):
+    """Raises 'ResourceNotFound' exception when sale not found."""
+    service_sale = srv.SaleModel(**sale)
+    mock_repo = mocker.Mock()
+    mock_repo.update.side_effect = [rp.RecordNotFoundErr()]
+    service = provide_sale_service(repository=mock_repo)
+    with pytest.raises(srv.ResourceNotFoundErr):
+        service.update(service_sale, fields)
+
+
+@pytest.mark.parametrize("exception", [rp.RepositoryErr(), Exception()])
+@pytest.mark.parametrize("fields", [["sku"]])
+def test_update_generic_error(mocker, sale, exception, fields):
+    """Raises 'ServiceErr' exception for all other types of errors."""
+    service_sale = srv.SaleModel(**sale)
+    mock_repo = mocker.Mock()
+    mock_repo.update.side_effect = [exception]
+    service = provide_sale_service(repository=mock_repo)
+    with pytest.raises(srv.ServiceErr):
+        service.update(service_sale, fields)
+
+
+@pytest.mark.parametrize(
+    "fields",
+    [
+        ["sku", "subtotal", "fee"],
+        ["tax", "order_id"],
+    ],
+)
+def test_update_null_field(mocker, sale, fields):
+    """Raises 'ResourceFieldNullErr' exception for null nonnullable fields."""
+    service_sale = srv.SaleModel(**sale)
+    for f in fields:
+        setattr(service_sale, f, None)
+    mock_repo = mocker.Mock()
+    mock_repo.update.side_effect = [rp.RecordFieldNullErr(field=fields[0])]
+    service = provide_sale_service(repository=mock_repo)
+    with pytest.raises(srv.ResourceFieldNullErr) as excinfo:
+        service.update(service_sale, fields)
+    assert excinfo.value.field == fields[0]
+
+
+@pytest.mark.parametrize("fields", [["sku"]])
+def test_update_no_id(mocker, sale, fields):
+    """Raises 'InvalidArgsErr' exception when sale.id is None."""
+    service_sale = srv.SaleModel(**sale)
+    service_sale.id = None
+    mock_repo = mocker.Mock()
+    mock_repo.update.side_effect = [ValueError()]
+    service = provide_sale_service(repository=mock_repo)
+    with pytest.raises(srv.InvalidArgsErr):
+        service.update(service_sale, fields)
+
+
+@pytest.mark.parametrize("fields", [["foo", "sku"], ["foobar"]])
+def test_update_invalid_fields(mocker, sale, fields):
+    """
+    Raises 'InvalidArgsErr' exception when fields list has unknown values.
+    """
+    service_sale = srv.SaleModel(**sale)
+    mock_repo = mocker.Mock()
+    mock_repo.update.side_effect = [ValueError()]
+    service = provide_sale_service(repository=mock_repo)
+    with pytest.raises(srv.InvalidArgsErr):
+        service.update(service_sale, fields)

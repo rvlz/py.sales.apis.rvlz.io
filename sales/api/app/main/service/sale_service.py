@@ -1,7 +1,7 @@
 """Sale service."""
 import copy
-
 from datetime import datetime
+from typing import List
 
 from app.main import service as srv
 from app.main import repository as repo
@@ -53,5 +53,19 @@ class SaleService(srv.SaleService):
             self._repository.delete_by_id(id)
         except repo.RecordNotFoundErr:
             raise srv.ResourceNotFoundErr()
+        except Exception:
+            raise srv.ServiceErr()
+
+    def update(self, sale: srv.SaleModel, fields: List[str]) -> None:
+        """Update sale."""
+        try:
+            repo_sale = mapper.to_sale_repo_model(sale)
+            self._repository.update(repo_sale, fields)
+        except repo.RecordNotFoundErr:
+            raise srv.ResourceNotFoundErr()
+        except repo.RecordFieldNullErr as error:
+            raise srv.ResourceFieldNullErr(field=error.field)
+        except ValueError:
+            raise srv.InvalidArgsErr()
         except Exception:
             raise srv.ServiceErr()
