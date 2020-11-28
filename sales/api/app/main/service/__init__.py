@@ -39,6 +39,10 @@ class SaleService(ABC):
     def find_by_id(self, id: str) -> SaleModel:
         pass
 
+    @abstractmethod
+    def create(self, sale: SaleModel) -> SaleModel:
+        pass
+
 
 class ServiceErr(Exception):
     """Generic service error."""
@@ -46,3 +50,10 @@ class ServiceErr(Exception):
 
 class ResourceNotFoundErr(ServiceErr):
     """Resource not found."""
+
+
+class ResourceFieldNullErr(ServiceErr):
+    """Resource field cannot be null."""
+
+    def __init__(self, field):
+        self.field = field
