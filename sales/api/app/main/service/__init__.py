@@ -43,6 +43,10 @@ class SaleService(ABC):
     def create(self, sale: SaleModel) -> SaleModel:
         pass
 
+    @abstractmethod
+    def delete_by_id(self, id: str) -> None:
+        pass
+
 
 class ServiceErr(Exception):
     """Generic service error."""

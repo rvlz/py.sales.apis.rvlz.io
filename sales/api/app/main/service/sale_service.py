@@ -46,3 +46,12 @@ class SaleService(srv.SaleService):
             raise srv.ResourceFieldNullErr(field=error.field)
         except Exception:
             raise srv.ServiceErr()
+
+    def delete_by_id(self, id: str) -> None:
+        """Delete sale by id."""
+        try:
+            self._repository.delete_by_id(id)
+        except repo.RecordNotFoundErr:
+            raise srv.ResourceNotFoundErr()
+        except Exception:
+            raise srv.ServiceErr()

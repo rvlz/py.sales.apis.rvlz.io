@@ -105,3 +105,30 @@ def test_create_generic_error(mocker, sale, exception):
     service = provide_sale_service(repository=mock_repo)
     with pytest.raises(srv.ServiceErr):
         service.create(service_sale)
+
+
+def test_delete_by_id(mocker, sale):
+    """Delete single sale by id."""
+    mock_repo = mocker.Mock()
+    service = provide_sale_service(repository=mock_repo)
+    service.delete_by_id(sale["id"])
+    mock_repo.delete_by_id.assert_called_with(sale["id"])
+
+
+def test_delete_by_id_not_found(mocker, sale):
+    """Raises 'ResourceNotFoundErr' exception when sale not found."""
+    mock_repo = mocker.Mock()
+    mock_repo.delete_by_id.side_effect = [rp.RecordNotFoundErr()]
+    service = provide_sale_service(repository=mock_repo)
+    with pytest.raises(srv.ResourceNotFoundErr):
+        service.delete_by_id(sale["id"])
+
+
+@pytest.mark.parametrize("exception", [rp.RepositoryErr(), Exception()])
+def test_delete_by_id_generic_error(mocker, sale, exception):
+    """Raises 'ServiceErr' exception for all other types of errors."""
+    mock_repo = mocker.Mock()
+    mock_repo.delete_by_id.side_effect = [exception]
+    service = provide_sale_service(repository=mock_repo)
+    with pytest.raises(srv.ServiceErr):
+        service.delete_by_id(sale["id"])
