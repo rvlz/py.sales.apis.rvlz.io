@@ -8,22 +8,22 @@ from app.main.service.sale_service import provide_sale_service
 
 def test_find_by_id(mocker, sale):
     """Find a single sale by id."""
-    repo_s = rp.SaleModel(**sale)
+    repo_sale = rp.SaleModel(**sale)
     mock_repo = mocker.Mock()
-    mock_repo.find_by_id.return_value = repo_s
+    mock_repo.find_by_id.return_value = repo_sale
     service = provide_sale_service(repository=mock_repo)
-    s = service.find_by_id(id=sale["id"])
-    assert isinstance(s, srv.SaleModel)
-    assert s.id == repo_s.id
-    assert s.date_time == repo_s.date_time
-    assert s.order_id == repo_s.order_id
-    assert s.sku == repo_s.sku
-    assert s.quantity == repo_s.quantity
-    assert s.subtotal == repo_s.subtotal
-    assert s.fee == repo_s.fee
-    assert s.tax == repo_s.tax
-    assert s.created_at == repo_s.created_at
-    assert s.updated_at == repo_s.updated_at
+    service_sale = service.find_by_id(id=sale["id"])
+    assert isinstance(service_sale, srv.SaleModel)
+    assert service_sale.id == repo_sale.id
+    assert service_sale.date_time == repo_sale.date_time
+    assert service_sale.order_id == repo_sale.order_id
+    assert service_sale.sku == repo_sale.sku
+    assert service_sale.quantity == repo_sale.quantity
+    assert service_sale.subtotal == repo_sale.subtotal
+    assert service_sale.fee == repo_sale.fee
+    assert service_sale.tax == repo_sale.tax
+    assert service_sale.created_at == repo_sale.created_at
+    assert service_sale.updated_at == repo_sale.updated_at
     mock_repo.find_by_id.assert_called_with(sale["id"])
 
 
