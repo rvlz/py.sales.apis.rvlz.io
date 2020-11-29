@@ -7,6 +7,13 @@ services:
       dockerfile: Dockerfile
     environment:
       FLASK_ENV: development
+      APP_CONFIG: app.main.config.DevelopmentConfig
+      DB_NAME: api_sales
+      DB_NAME_TEST: api_test_sales
+      DB_USERNAME: docker
+      DB_PASSWORD: docker
+      DB_HOST: sales-db
+      DB_PORT: 5432
     volumes:
     - "./sales/api:/code"
     ports:
