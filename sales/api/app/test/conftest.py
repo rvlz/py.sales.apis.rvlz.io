@@ -57,3 +57,11 @@ def sale_rows(count):
         )
         for i in range(count)
     ]
+
+
+@pytest.fixture
+def config(env, monkeypatch):
+    """Set app configuration."""
+    monkeypatch.setenv(
+        "APP_CONFIG", f"app.main.config.{env.capitalize()}Config"
+    )
