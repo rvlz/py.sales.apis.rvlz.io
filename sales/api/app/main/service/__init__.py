@@ -36,6 +36,10 @@ class SaleService(ABC):
     """Sale service interface."""
 
     @abstractmethod
+    def close(self) -> None:
+        pass
+
+    @abstractmethod
     def find_by_id(self, id: str) -> SaleModel:
         pass
 

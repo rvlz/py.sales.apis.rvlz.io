@@ -21,6 +21,9 @@ class SaleService(srv.SaleService):
         """Inject repository."""
         self._repository = repository
 
+    def close(self) -> None:
+        self._repository.close()
+
     def find_by_id(self, id: str) -> srv.SaleModel:
         """Find single sale by id."""
         try:
