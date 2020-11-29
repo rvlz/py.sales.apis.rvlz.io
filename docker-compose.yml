@@ -5,6 +5,8 @@ services:
     build:
       context: ./sales/api
       dockerfile: Dockerfile
+    environment:
+      FLASK_ENV: development
     volumes:
     - "./sales/api:/code"
     ports:
