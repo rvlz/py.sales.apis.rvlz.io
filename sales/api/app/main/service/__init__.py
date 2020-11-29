@@ -31,6 +31,21 @@ class SaleModel:
         self.created_at = created_at
         self.updated_at = updated_at
 
+    def to_json_dict(self):
+        """Convert to JSON serializable dict."""
+        return {
+            "id": self.id,
+            "date_time": self.date_time,
+            "order_id": self.order_id,
+            "sku": self.sku,
+            "quantity": self.quantity,
+            "subtotal": self.subtotal,
+            "tax": self.tax,
+            "fee": self.fee,
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
+        }
+
 
 class SaleService(ABC):
     """Sale service interface."""
