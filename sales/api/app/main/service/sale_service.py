@@ -69,3 +69,17 @@ class SaleService(srv.SaleService):
             raise srv.InvalidArgsErr()
         except Exception:
             raise srv.ServiceErr()
+
+    def find(
+        self,
+        id: str,
+        limit: int = 10,
+        after: bool = True,
+    ) -> List[srv.SaleModel]:
+        try:
+            results = self._repository.find(id, limit, after)
+            return [mapper.to_sale_service_model(r) for r in results]
+        except ValueError:
+            raise srv.InvalidArgsErr()
+        except Exception:
+            raise srv.ServiceErr()

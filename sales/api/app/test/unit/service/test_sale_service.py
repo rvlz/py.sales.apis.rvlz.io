@@ -216,3 +216,38 @@ def test_update_invalid_fields(mocker, sale, fields):
     service = provide_sale_service(repository=mock_repo)
     with pytest.raises(srv.InvalidArgsErr):
         service.update(service_sale, fields)
+
+
+@pytest.mark.parametrize("count", [10])
+@pytest.mark.parametrize("limit,after", [(10, True), (10, False)])
+def test_find(mocker, sales, limit, after):
+    """Find sales starting from specified sales "create_at" time."""
+    mock_repo = mocker.Mock()
+    mock_repo.find.return_value = [rp.SaleModel(s) for s in sales]
+    service = provide_sale_service(repository=mock_repo)
+    service_sales = service.find("foo", limit=limit, after=after)
+    assert isinstance(service_sales, list)
+    for s in service_sales:
+        assert isinstance(s, srv.SaleModel)
+    mock_repo.find.assert_called_with("foo", limit, after)
+
+
+@pytest.mark.parametrize("limit,after", [(1000, True)])
+def test_find_invalid_args(mocker, limit, after):
+    """Raises 'ServiceErr' exception for all other types of errors."""
+    mock_repo = mocker.Mock()
+    mock_repo.find.side_effect = [ValueError()]
+    service = provide_sale_service(repository=mock_repo)
+    with pytest.raises(srv.InvalidArgsErr):
+        service.find("foo", limit, after)
+
+
+@pytest.mark.parametrize("exception", [rp.RepositoryErr(), Exception()])
+@pytest.mark.parametrize("limit,after", [(10, True)])
+def test_find_generic_error(mocker, limit, after, exception):
+    """Raises 'ServiceErr' exception for all other types of errors."""
+    mock_repo = mocker.Mock()
+    mock_repo.find.side_effect = [exception]
+    service = provide_sale_service(repository=mock_repo)
+    with pytest.raises(srv.ServiceErr):
+        service.find("foo", limit, after)

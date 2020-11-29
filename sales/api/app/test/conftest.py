@@ -22,6 +22,25 @@ def sale():
 
 
 @pytest.fixture
+def sales(count):
+    return [
+        {
+            "id": str(i),
+            "date_time": datetime.utcnow(),
+            "order_id": f"FFX{i}",
+            "sku": f"ff-11-22-{i}",
+            "quantity": 32,
+            "subtotal": 50000,
+            "fee": 1200,
+            "tax": 1555,
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow(),
+        }
+        for i in range(count)
+    ]
+
+
+@pytest.fixture
 def sale_rows(count):
     return [
         (
